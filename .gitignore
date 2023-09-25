@@ -8,9 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # My certs
-it-tools.orb.local.crt
-it-tools.orb.local.key
-zllocalCA.crt
+secrets
 
 node_modules
 .DS_Store
