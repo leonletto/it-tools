@@ -29,31 +29,61 @@ const textIcons = ref<Blob[]>([]); // Reference for text icons
 const generateIcons = async () => {
   textIcons.value = await generateTextIcons(textInput.value, textFont.value, sizes);
 };
-
+// Variable to keep track of the active tab
+const activeTab = ref('imageResize');  // Default to Image Resizer tab
 </script>
+
+<style scoped>
+/* CSS class for active tab */
+.active {
+  background-color: #007bff;
+  color: white;
+}
+</style>
 
 <template>
   <CCard>
-    <!-- Input area for file -->
-    <input type="file" @change="handleFile" accept="image/jpeg, image/png" />
-
-    <!-- Display area for resized images -->
-    <div v-for="(image, index) in resizedImages" :key="index">
-      <img v-if="image" :src="createObjectURL(image)" :alt="'Resized to ' + sizes[index] + 'px'" />
+    <!-- Tab Buttons -->
+    <div>
+      <button @click="activeTab = 'imageResize'" :class="{ active: activeTab === 'imageResize' }">Image Resizer</button>
+      <button @click="activeTab = 'textGenerator'" :class="{ active: activeTab === 'textGenerator' }">Text Generator</button>
     </div>
 
-    <!-- Input area for text -->
-    <CInputText v-model:value="textInput" placeholder="Enter your text here..." />
+    <!-- Tab Descriptions -->
+    <div v-if="activeTab === 'imageResize'">
+      <p>This tab allows you to upload an image and resize it to various dimensions.</p>
+    </div>
+    <div v-else-if="activeTab === 'textGenerator'">
+      <p>This tab allows you to input text and generate icons with varying sizes.</p>
+    </div>
 
-    <!-- Input area for font -->
-    <CInputText v-model:value="textFont" placeholder="Enter your font here..." />
+    <!-- Image Resizer Tab -->
+    <div v-if="activeTab === 'imageResize'">
+      <!-- Input area for file -->
+      <input type="file" @change="handleFile" accept="image/jpeg, image/png" />
 
-    <!-- Generate button -->
-    <button @click="generateIcons">Generate</button>
+      <!-- Display area for resized images -->
+      <div v-for="(image, index) in resizedImages" :key="index">
+        <img v-if="image" :src="createObjectURL(image)" :alt="'Resized to ' + sizes[index] + 'px'" />
+      </div>
+    </div>
 
-    <!-- Display area for text icons -->
-    <div v-for="(image, index) in textIcons" :key="'text-' + index">
-      <img v-if="image" :src="createObjectURL(image)" :alt="'Text icon resized to ' + sizes[index] + 'px'" />
+    <!-- Text Generator Tab -->
+    <div v-else-if="activeTab === 'textGenerator'">
+      <!-- Input area for text -->
+      <CInputText v-model:value="textInput" placeholder="Enter your text here..." />
+
+      <!-- Input area for font -->
+      <CInputText v-model:value="textFont" placeholder="Enter your font here..." />
+
+      <!-- Generate button -->
+      <button @click="generateIcons">Generate</button>
+
+      <!-- Display area for text icons -->
+      <div v-for="(image, index) in textIcons" :key="'text-' + index">
+        <img v-if="image" :src="createObjectURL(image)" :alt="'Text icon resized to ' + sizes[index] + 'px'" />
+      </div>
     </div>
   </CCard>
 </template>
+
