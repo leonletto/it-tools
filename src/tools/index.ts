@@ -72,6 +72,7 @@ import { tool as uuidGenerator } from './uuid-generator';
 import { tool as macAddressLookup } from './mac-address-lookup';
 import { tool as xmlFormatter } from './xml-formatter';
 import { tool as htmlMdConverter } from './html-md-converter';
+import { tool as iconGenerator } from './icon-generator';
 
 export const toolsByCategory: ToolCategory[] = [
   {
@@ -96,6 +97,7 @@ export const toolsByCategory: ToolCategory[] = [
       listConverter,
       tomlToJson,
       tomlToYaml,
+      iconGenerator,
       htmlMdConverter,
     ],
   },
