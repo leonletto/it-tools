@@ -21,4 +21,4 @@ EXPOSE 80 443
 CMD ["nginx", "-g", "daemon off;"]
 
 # docker build -t my-it-tools:1.0 -f Dockerfile .
-#docker run -d --name it-tools -p 80 -p 443 my-it-tools:1.0
+#docker rm -f it-tools 2>/dev/null; docker run -d --name it-tools --restart unless-stopped -p 80 -p 443 my-it-tools:1.0
