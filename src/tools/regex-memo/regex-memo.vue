@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useThemeVars } from 'naive-ui';
-import Memo from './regex-memo.content.md';
+import regexMemoContent from './regex-memo.content.md?raw';
 
 const themeVars = useThemeVars();
 </script>
 
 <template>
   <div>
-    <Memo />
+    <c-markdown :markdown="regexMemoContent" />
   </div>
 </template>
 
