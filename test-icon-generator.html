@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Generator Test</title>
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+    <h1>Icon Generator Test</h1>
+    
+    <div>
+        <h2>Upload Image</h2>
+        <input type="file" id="fileInput" accept="image/*">
+        <div id="results"></div>
+        <button id="downloadAll" style="display:none;">Download All as ZIP</button>
+    </div>
+
+    <script>
+        const sizes = [16, 24, 32, 48, 256];
+        let generatedBlobs = [];
+        let originalFilename = '';
+
+        function resizeImage(file, sizes) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                img.onload = () => {
+                    const blobs = [];
+                    const promises = sizes.map((size) => {
+                        return new Promise((resolve) => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = size;
+                            canvas.height = size;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, size, size);
+                            canvas.toBlob((blob) => {
+                                if (blob) {
+                                    blobs.push(blob);
+                                }
+                                resolve();
+                            }, 'image/png');
+                        });
+                    });
+                    Promise.all(promises).then(() => resolve(blobs));
+                };
+                img.onerror = reject;
+            });
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function getBaseFilename(filename) {
+            const lastDotIndex = filename.lastIndexOf('.');
+            return lastDotIndex > 0 ? filename.substring(0, lastDotIndex) : filename;
+        }
+
+        function createResizedFilename(originalFilename, size) {
+            const baseName = getBaseFilename(originalFilename);
+            return `${baseName}_${size}x${size}.png`;
+        }
+
+        async function downloadAllAsZip(blobs, sizes, baseFilename) {
+            const zip = new JSZip();
+            
+            for (let i = 0; i < blobs.length; i++) {
+                const filename = createResizedFilename(baseFilename, sizes[i]);
+                zip.file(filename, blobs[i]);
+            }
+            
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const zipFilename = `${baseFilename}_all_images.zip`;
+            downloadBlob(zipBlob, zipFilename);
+        }
+
+        document.getElementById('fileInput').addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            originalFilename = file.name;
+            const baseFilename = getBaseFilename(originalFilename);
+            
+            try {
+                generatedBlobs = await resizeImage(file, sizes);
+                
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '';
+                
+                generatedBlobs.forEach((blob, index) => {
+                    const container = document.createElement('div');
+                    container.style.marginBottom = '10px';
+                    container.style.border = '1px solid #ddd';
+                    container.style.padding = '10px';
+                    
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(blob);
+                    img.style.maxWidth = '100px';
+                    img.style.maxHeight = '100px';
+                    
+                    const info = document.createElement('span');
+                    info.textContent = ` ${sizes[index]}x${sizes[index]}px `;
+                    
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = `Download ${sizes[index]}x${sizes[index]}`;
+                    downloadBtn.onclick = () => {
+                        const filename = createResizedFilename(baseFilename, sizes[index]);
+                        downloadBlob(blob, filename);
+                    };
+                    
+                    container.appendChild(img);
+                    container.appendChild(info);
+                    container.appendChild(downloadBtn);
+                    resultsDiv.appendChild(container);
+                });
+                
+                document.getElementById('downloadAll').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error processing image:', error);
+            }
+        });
+
+        document.getElementById('downloadAll').addEventListener('click', () => {
+            if (generatedBlobs.length > 0) {
+                const baseFilename = getBaseFilename(originalFilename);
+                downloadAllAsZip(generatedBlobs, sizes, baseFilename);
+            }
+        });
+    </script>
+</body>
+</html>

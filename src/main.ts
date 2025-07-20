@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { createHead } from '@vueuse/head';
 
-import { registerSW } from 'virtual:pwa-register';
+// import { registerSW } from 'virtual:pwa-register';
 import { plausible } from './plugins/plausible.plugin';
 
 import 'virtual:uno.css';
@@ -13,7 +13,7 @@ import App from './App.vue';
 import router from './router';
 import { i18nPlugin } from './plugins/i18n.plugin';
 
-registerSW();
+// registerSW();
 
 const app = createApp(App);
 

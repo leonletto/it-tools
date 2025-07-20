@@ -1,6 +1,7 @@
 import type { Plugin } from 'vue';
 import { createI18n } from 'vue-i18n';
-import baseMessages from '@intlify/unplugin-vue-i18n/messages';
+// Temporarily use empty object for base messages to avoid import issues
+const baseMessages = {};
 import _ from 'lodash';
 import { parse as parseYaml } from 'yaml';
 
