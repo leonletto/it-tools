@@ -1,11 +1,13 @@
 # build stage
 FROM node:lts-alpine AS build-stage
+# Set environment variables for non-interactive npm installs
+ENV NPM_CONFIG_LOGLEVEL warn
+ENV CI true
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm install -g pnpm
-RUN npm install
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm i --frozen-lockfile
 COPY . .
-RUN npm run build
+RUN pnpm build
 
 # production stage
 FROM nginx:stable-alpine AS production-stage
@@ -19,6 +21,3 @@ COPY secrets/zllocalCA.crt /etc/nginx/ssl/
 
 EXPOSE 80 443
 CMD ["nginx", "-g", "daemon off;"]
-
-# docker build -t my-it-tools:1.0 -f Dockerfile .
-#docker rm -f it-tools 2>/dev/null; docker run -d --name it-tools --restart unless-stopped -p 80 -p 443 my-it-tools:1.0
