@@ -3,3 +3,14 @@ playwright-report
 coverage
 dist
 test-results
+
+.dockerignore
+.github
+.vscode
+node_modules
+
+#it-tools.orb.local.crt
+Dockerfile
+#it-tools.orb.local.key
+#zllocalCA.crt
+

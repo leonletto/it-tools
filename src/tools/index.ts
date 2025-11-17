@@ -89,6 +89,7 @@ import { tool as xmlFormatter } from './xml-formatter';
 import { tool as yamlViewer } from './yaml-viewer';
 import { tool as iconGenerator } from './icon-generator';
 import { tool as htmlMdConverter } from './html-md-converter';
+import { tool as iconGenerator } from './icon-generator';
 
 export const toolsByCategory: ToolCategory[] = [
   {
@@ -118,6 +119,8 @@ export const toolsByCategory: ToolCategory[] = [
       xmlToJson,
       jsonToXml,
       markdownToHtml,
+      iconGenerator,
+      htmlMdConverter,
       iconGenerator,
       htmlMdConverter,
     ],
