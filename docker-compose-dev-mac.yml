@@ -3,31 +3,36 @@
 # =============================================================================
 #
 # This configuration provides a development environment with live reload
-# functionality for the IT-Tools application.
+# functionality for the IT-Tools application using Docker Compose Watch.
 #
 # USAGE:
-#   Start development environment with live reload:
+#   Start development environment with live reload (RECOMMENDED):
+#     docker compose -f docker-compose-dev-mac.yml watch
+#
+#   Alternative - Start with manual rebuild:
 #     docker compose -f docker-compose-dev-mac.yml up --build
 #
-#   Start in detached mode:
+#   Start in detached mode (without watch):
 #     docker compose -f docker-compose-dev-mac.yml up --build -d
-#
-#   Rebuild and restart:
-#     docker compose -f docker-compose-dev-mac.yml up --build --force-recreate -d
 #
 #   Stop the environment:
 #     docker compose -f docker-compose-dev-mac.yml down
 #
 # FEATURES:
+#   - Docker Compose Watch: Efficient file watching for macOS/Windows
 #   - Live reload: Changes to source files automatically update in browser
 #   - Hot Module Replacement (HMR) via Vite dev server
+#   - Smart sync: Config changes restart container, package.json rebuilds
 #   - Port 5173: Vite development server with HMR
-#   - Port 80: Production-like nginx server (optional)
-#   - Port 443: SSL-enabled nginx server (optional)
+#
+# DOCKER COMPOSE WATCH:
+#   The 'watch' command enables efficient file synchronization:
+#   - 'sync': Updates files in container, triggers HMR (src/, locales/, public/)
+#   - 'sync+restart': Updates files and restarts container (config files)
+#   - 'rebuild': Rebuilds container on changes (package.json)
 #
 # VERIFICATION:
 #   Development server: http://localhost:5173
-#   Production preview:  http://localhost (if nginx service enabled)
 #   Container logs:      docker logs it-tools-dev
 #
 # =============================================================================
@@ -44,25 +49,61 @@ services:
     ports:
       - "5173:5173"  # Vite dev server
     volumes:
-      # Mount source code for live reload
-      - ./src:/app/src:cached
-      - ./locales:/app/locales:cached
-      - ./public:/app/public:cached
-      - ./index.html:/app/index.html:cached
-      - ./vite.config.ts:/app/vite.config.ts:cached
-      - ./tsconfig.json:/app/tsconfig.json:cached
-      - ./tsconfig.app.json:/app/tsconfig.app.json:cached
-      - ./unocss.config.ts:/app/unocss.config.ts:cached
-      # Preserve node_modules in container (don't overwrite with host)
+      # Only preserve node_modules in container (don't overwrite with host)
+      # All other files are handled by Docker Compose Watch (see develop.watch below)
       - node_modules:/app/node_modules
     environment:
       - NODE_ENV=development
       - VITE_HOST=0.0.0.0
       - VITE_PORT=5173
-    command: pnpm dev --host 0.0.0.0 --port 5173
+      # Enable file watching with polling for Docker on macOS
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+    command: pnpm dev --config vite.config.docker.ts --host 0.0.0.0 --port 5173
     restart: unless-stopped
     networks:
       - it-tools-network
+    # Docker Compose File Watch configuration for efficient live reload
+    # This replaces traditional bind mounts for better performance on macOS/Windows
+    develop:
+      watch:
+        # Sync source files - changes trigger HMR
+        - action: sync
+          path: ./src
+          target: /app/src
+          ignore:
+            - node_modules/
+        # Sync locale files
+        - action: sync
+          path: ./locales
+          target: /app/locales
+        # Sync public assets
+        - action: sync
+          path: ./public
+          target: /app/public
+        # Sync index.html
+        - action: sync
+          path: ./index.html
+          target: /app/index.html
+        # Sync config files - changes trigger container restart
+        - action: sync+restart
+          path: ./vite.config.docker.ts
+          target: /app/vite.config.docker.ts
+        - action: sync+restart
+          path: ./vite.config.ts
+          target: /app/vite.config.ts
+        - action: sync+restart
+          path: ./tsconfig.json
+          target: /app/tsconfig.json
+        - action: sync+restart
+          path: ./tsconfig.app.json
+          target: /app/tsconfig.app.json
+        - action: sync+restart
+          path: ./unocss.config.ts
+          target: /app/unocss.config.ts
+        # Rebuild on package.json changes
+        - action: rebuild
+          path: ./package.json
 
   # =============================================================================
   # IT-Tools Production Preview (Optional - Nginx with built assets)

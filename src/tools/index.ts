@@ -120,8 +120,6 @@ export const toolsByCategory: ToolCategory[] = [
       markdownToHtml,
       iconGenerator,
       htmlMdConverter,
-      iconGenerator,
-      htmlMdConverter,
     ],
   },
   {

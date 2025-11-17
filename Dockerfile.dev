@@ -6,7 +6,7 @@
 #
 # Features:
 # - Hot Module Replacement (HMR)
-# - Fast refresh on file changes
+# - Fast refresh on file changes with polling (for Docker on macOS/Windows)
 # - Source maps for debugging
 # - Vite dev server on port 5173
 # =============================================================================
@@ -31,7 +31,7 @@ COPY . .
 # Expose Vite dev server port
 EXPOSE 5173
 
-# Start Vite development server
-# --host 0.0.0.0 allows external connections (required for Docker)
-CMD ["pnpm", "dev", "--host", "0.0.0.0", "--port", "5173"]
+# Start Vite development server with Docker-specific config
+# Uses vite.config.docker.ts which enables polling for file watching
+CMD ["pnpm", "dev", "--config", "vite.config.docker.ts", "--host", "0.0.0.0", "--port", "5173"]
 
