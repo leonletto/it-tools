@@ -1,5 +1,22 @@
 # AutoCAD LLM Sync - Vue Tool Planning Document
 
+---
+
+## ⚠️ CRITICAL: Package Manager
+
+**THIS REPOSITORY USES `pnpm`, NOT `npm`!**
+
+All dependency installation commands MUST use `pnpm`:
+```bash
+# ✅ CORRECT
+pnpm install dxf-parser
+
+# ❌ WRONG - DO NOT USE
+npm install dxf-parser
+```
+
+---
+
 ## 1. Overview
 
 This document outlines the implementation plan for **autocad-llm-sync**, a Vue-based tool that enables bidirectional synchronization between CAD files (DXX/DXF/SCR) and JSON representations, with LLM integration capabilities. The tool will run entirely in the browser with local file system integration.

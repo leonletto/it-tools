@@ -1,5 +1,22 @@
 # AutoCAD LLM Sync - Quick Start Guide
 
+---
+
+## ⚠️ CRITICAL: Package Manager
+
+**THIS REPOSITORY USES `pnpm`, NOT `npm`!**
+
+All dependency installation commands MUST use `pnpm`:
+```bash
+# ✅ CORRECT
+pnpm install dxf-parser
+
+# ❌ WRONG - DO NOT USE
+npm install dxf-parser
+```
+
+---
+
 ## Step 1: Create Tool Directory
 
 ```bash

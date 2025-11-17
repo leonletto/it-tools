@@ -1,5 +1,22 @@
 # AutoCAD LLM Sync - Executive Summary
 
+---
+
+## ⚠️ CRITICAL: Package Manager
+
+**THIS REPOSITORY USES `pnpm`, NOT `npm`!**
+
+All dependency installation commands MUST use `pnpm`:
+```bash
+# ✅ CORRECT
+pnpm install dxf-parser
+
+# ❌ WRONG - DO NOT USE
+npm install dxf-parser
+```
+
+---
+
 ## What Is This?
 
 A browser-based Vue tool that bridges AutoCAD files and Large Language Models (LLMs), enabling AI-assisted CAD geometry editing through a JSON intermediate format.

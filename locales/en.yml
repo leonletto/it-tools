@@ -392,3 +392,7 @@ tools:
   text-to-binary:
     title: Text to ASCII binary
     description: Convert text to its ASCII binary representation and vice-versa.
+
+  autocad-llm-sync:
+    title: AutoCAD LLM Sync
+    description: Convert between AutoCAD DXF files and JSON for LLM-powered CAD editing. Parse DXF to JSON, edit with AI, and export back to DXF or SCR scripts.
