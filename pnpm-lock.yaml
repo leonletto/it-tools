@@ -8575,7 +8575,7 @@ snapshots:
 
   '@vueuse/shared@10.3.0(vue@3.3.4)':
     dependencies:
-      vue-demi: 0.14.5(vue@3.3.4)
+      vue-demi: 0.14.6(vue@3.3.4)
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
