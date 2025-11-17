@@ -1,0 +1,90 @@
+# =============================================================================
+# IT-Tools Development Docker Compose Configuration
+# =============================================================================
+#
+# This configuration provides a development environment with live reload
+# functionality for the IT-Tools application.
+#
+# USAGE:
+#   Start development environment with live reload:
+#     docker compose -f docker-compose-dev-mac.yml up --build
+#
+#   Start in detached mode:
+#     docker compose -f docker-compose-dev-mac.yml up --build -d
+#
+#   Rebuild and restart:
+#     docker compose -f docker-compose-dev-mac.yml up --build --force-recreate -d
+#
+#   Stop the environment:
+#     docker compose -f docker-compose-dev-mac.yml down
+#
+# FEATURES:
+#   - Live reload: Changes to source files automatically update in browser
+#   - Hot Module Replacement (HMR) via Vite dev server
+#   - Port 5173: Vite development server with HMR
+#   - Port 80: Production-like nginx server (optional)
+#   - Port 443: SSL-enabled nginx server (optional)
+#
+# VERIFICATION:
+#   Development server: http://localhost:5173
+#   Production preview:  http://localhost (if nginx service enabled)
+#   Container logs:      docker logs it-tools-dev
+#
+# =============================================================================
+
+services:
+  # =============================================================================
+  # IT-Tools Development Server (Vite with HMR)
+  # =============================================================================
+  it-tools-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: it-tools-dev
+    ports:
+      - "5173:5173"  # Vite dev server
+    volumes:
+      # Mount source code for live reload
+      - ./src:/app/src:cached
+      - ./locales:/app/locales:cached
+      - ./public:/app/public:cached
+      - ./index.html:/app/index.html:cached
+      - ./vite.config.ts:/app/vite.config.ts:cached
+      - ./tsconfig.json:/app/tsconfig.json:cached
+      - ./tsconfig.app.json:/app/tsconfig.app.json:cached
+      - ./unocss.config.ts:/app/unocss.config.ts:cached
+      # Preserve node_modules in container (don't overwrite with host)
+      - node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_HOST=0.0.0.0
+      - VITE_PORT=5173
+    command: pnpm dev --host 0.0.0.0 --port 5173
+    restart: unless-stopped
+    networks:
+      - it-tools-network
+
+  # =============================================================================
+  # IT-Tools Production Preview (Optional - Nginx with built assets)
+  # =============================================================================
+  # Uncomment this service to test production build locally
+  # it-tools-prod:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: it-tools-prod
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   restart: unless-stopped
+  #   networks:
+  #     - it-tools-network
+
+networks:
+  it-tools-network:
+    driver: bridge
+
+volumes:
+  node_modules:
+    driver: local
+

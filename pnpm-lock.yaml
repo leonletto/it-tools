@@ -352,8 +352,8 @@ importers:
         specifier: ^7.3.0
         version: 7.3.0
       zx:
-        specifier: ^7.2.1
-        version: 7.2.1
+        specifier: ^7.2.4
+        version: 7.2.4
 
 packages:
 
@@ -4835,6 +4835,7 @@ packages:
   source-map@0.8.0-beta.0:
     resolution: {integrity: sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==}
     engines: {node: '>= 8'}
+    deprecated: The work that was done in this beta branch won't be included in future versions
 
   sourcemap-codec@1.4.8:
     resolution: {integrity: sha512-9NykojV5Uih4lgo5So5dtw+f0JgJX30KCNI8gwhz2J9A15wD0Ml6tjHKwf6fTSa6fAdVBdZeNOs9eJ71qCk8vA==}
@@ -7204,19 +7205,12 @@ snapshots:
 
   '@types/lodash@4.17.20': {}
 
-  '@types/lodash@4.14.200': {}
-
-  '@types/markdown-it@12.2.3':
-    dependencies:
-      '@types/linkify-it': 3.0.2
-      '@types/mdurl': 1.0.2
-
   '@types/markdown-it@13.0.9':
     dependencies:
       '@types/linkify-it': 3.0.5
       '@types/mdurl': 1.0.5
 
-  '@types/mdast@3.0.11':
+  '@types/markdown-it@14.1.2':
     dependencies:
       '@types/linkify-it': 5.0.0
       '@types/mdurl': 2.0.0
@@ -7269,7 +7263,9 @@ snapshots:
 
   '@types/trusted-types@2.0.7': {}
 
-  '@types/ua-parser-js@0.7.36': {}
+  '@types/turndown@5.0.5': {}
+
+  '@types/ua-parser-js@0.7.39': {}
 
   '@types/unist@3.0.3': {}
 
@@ -7805,21 +7801,6 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
-
-  '@vueuse/shared@10.3.0(vue@3.3.4)':
-    dependencies:
-      vue-demi: 0.14.6(vue@3.3.4)
-    transitivePeerDependencies:
-      - '@vue/composition-api'
-      - vue
-
-  '@vueuse/shared@12.0.0(typescript@5.2.2)':
-    dependencies:
-      vue: 3.5.13(typescript@5.2.2)
-    transitivePeerDependencies:
-      - typescript
-
-  '@zhead/schema@1.0.0-beta.13': {}
 
   abab@2.0.6: {}
 
@@ -8395,9 +8376,11 @@ snapshots:
     dependencies:
       domelementtype: 2.3.0
 
-  dompurify@3.0.6: {}
+  dompurify@3.2.6:
+    optionalDependencies:
+      '@types/trusted-types': 2.0.7
 
-  domutils@3.1.0:
+  domutils@3.2.2:
     dependencies:
       dom-serializer: 2.0.0
       domelementtype: 2.3.0
@@ -9769,7 +9752,7 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mathjs@11.9.1:
+  mathjs@11.12.0:
     dependencies:
       '@babel/runtime': 7.27.6
       complex.js: 2.4.2
@@ -10812,7 +10795,8 @@ snapshots:
 
   seemly@0.3.10: {}
 
-  semver@5.7.2: {}
+  semver@5.7.2:
+    optional: true
 
   semver@6.3.1: {}
 
@@ -11186,7 +11170,9 @@ snapshots:
       picomatch: 4.0.3
       typescript: 5.8.3
 
-  tsx@4.19.2:
+  tslib@2.8.1: {}
+
+  tsx@4.20.3:
     dependencies:
       esbuild: 0.25.8
       get-tsconfig: 4.10.1
