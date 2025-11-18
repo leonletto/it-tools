@@ -177,12 +177,7 @@ async function handleFileUpload(event: Event) {
     fileMetadata.value = createFileMetadata(file);
     saveFileMetadata(fileMetadata.value);
 
-    // Update Monaco editors
-    nextTick(() => {
-      jsonEditor?.setValue(jsonContent.value);
-      scrEditor?.setValue(scrContent.value);
-      dxfEditor?.setValue(dxfContent.value);
-    });
+    // Editors will be updated automatically by watchers
   }
   catch (err: any) {
     errorMessage.value = `Error parsing file: ${err.message}`;
@@ -219,13 +214,7 @@ async function openFileWithHandle() {
     fileMetadata.value = createFileMetadata(file);
     saveFileMetadata(fileMetadata.value);
 
-    // Update editors
-    nextTick(() => {
-      jsonEditor?.setValue(jsonContent.value);
-      scrEditor?.setValue(scrContent.value);
-      dxfEditor?.setValue(dxfContent.value);
-    });
-
+    // Editors will be updated automatically by watchers
     successMessage.value = `Opened file: ${file.name}`;
   }
   catch (err: any) {
@@ -297,13 +286,7 @@ async function reloadFromDisk() {
     fileMetadata.value = createFileMetadata(file);
     saveFileMetadata(fileMetadata.value);
 
-    // Update editors
-    nextTick(() => {
-      jsonEditor?.setValue(jsonContent.value);
-      scrEditor?.setValue(scrContent.value);
-      dxfEditor?.setValue(dxfContent.value);
-    });
-
+    // Editors will be updated automatically by watchers
     successMessage.value = `Reloaded from ${file.name}`;
     isCheckingForChanges.value = false;
   }
@@ -369,10 +352,7 @@ function clearAll() {
   fileMetadata.value = null;
   clearFileMetadata();
 
-  // Clear editors
-  jsonEditor?.setValue('');
-  scrEditor?.setValue('');
-  dxfEditor?.setValue('');
+  // Editors will be cleared automatically by watchers
 }
 
 // Lifecycle hooks
@@ -381,7 +361,10 @@ onMounted(() => {
   const support = checkFileSystemSupport();
   fileSystemSupported.value = support.supported;
 
-  initializeEditors();
+  // Initialize editors after DOM is ready
+  nextTick(() => {
+    initializeEditors();
+  });
 });
 
 onBeforeUnmount(() => {
@@ -390,11 +373,37 @@ onBeforeUnmount(() => {
   dxfEditor?.dispose();
 });
 
-// Watch for tab changes to ensure editors are initialized
-watch(currentDocument, () => {
-  nextTick(() => {
-    initializeEditors();
-  });
+// Watch for document changes to initialize editors when first document is loaded
+// This ensures editors are created after the tab panes are rendered
+watch(currentDocument, (newDoc) => {
+  if (newDoc && (!jsonEditor || !scrEditor || !dxfEditor)) {
+    nextTick(() => {
+      initializeEditors();
+    });
+  }
+});
+
+// Watch for content changes and update editors if they exist
+watch(jsonContent, (newContent) => {
+  if (jsonEditor && jsonEditor.getValue() !== newContent) {
+    const position = jsonEditor.getPosition();
+    jsonEditor.setValue(newContent);
+    if (position) {
+      jsonEditor.setPosition(position);
+    }
+  }
+});
+
+watch(scrContent, (newContent) => {
+  if (scrEditor && scrEditor.getValue() !== newContent) {
+    scrEditor.setValue(newContent);
+  }
+});
+
+watch(dxfContent, (newContent) => {
+  if (dxfEditor && dxfEditor.getValue() !== newContent) {
+    dxfEditor.setValue(newContent);
+  }
 });
 </script>
 
