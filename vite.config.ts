@@ -15,6 +15,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 import Markdown from 'unplugin-vue-markdown/vite';
 import svgLoader from 'vite-svg-loader';
 import { configDefaults } from 'vitest/config';
+import monacoEditorPluginImport from 'vite-plugin-monaco-editor';
+// Handle CommonJS default export
+const monacoEditorPlugin = (monacoEditorPluginImport as any).default || monacoEditorPluginImport;
 
 const baseUrl = process.env.BASE_URL ?? '/';
 
@@ -99,6 +102,9 @@ export default defineConfig({
       resolvers: [NaiveUiResolver(), IconsResolver({ prefix: 'icon' })],
     }),
     Unocss(),
+    monacoEditorPlugin({
+      languageWorkers: ['editorWorkerService', 'json'],
+    }),
   ],
   base: baseUrl,
   resolve: {

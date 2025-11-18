@@ -24,24 +24,8 @@ import {
   updateLastSyncTime,
 } from './file-storage.service';
 
-// Disable Monaco Editor workers to avoid Vite bundling issues
-// Monaco 0.54.0 requires a proper worker stub instead of null
-(self as any).MonacoEnvironment = {
-  getWorker(_workerId: string, _label: string) {
-    // Return a fake worker that does nothing
-    // This prevents "Cannot read properties of null (reading 'postMessage')" errors
-    return {
-      postMessage: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      terminate: () => {},
-      dispatchEvent: () => true,
-      onmessage: null,
-      onmessageerror: null,
-      onerror: null,
-    } as Worker;
-  },
-};
+// Monaco Editor workers are now handled by vite-plugin-monaco-editor
+// This enables JSON syntax highlighting and validation
 
 // State
 const currentDocument = ref<CadDocument | null>(null);
@@ -98,7 +82,7 @@ function initializeEditors() {
   if (jsonEditorContainer.value && !jsonEditor) {
     jsonEditor = monaco.editor.create(jsonEditorContainer.value, {
       value: jsonContent.value,
-      language: 'plaintext', // Changed from 'json' to avoid worker issues
+      language: 'json', // JSON language with syntax highlighting and validation
       theme: styleStore.isDarkTheme ? 'it-tools-dark' : 'it-tools-light',
       minimap: { enabled: false },
       automaticLayout: true,
