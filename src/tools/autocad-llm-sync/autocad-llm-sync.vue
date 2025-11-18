@@ -1,11 +1,28 @@
 <script setup lang="ts">
 import * as monaco from 'monaco-editor';
-import { NCard, NTabs, NTabPane, NButton, NSpace, NAlert, NSplit } from 'naive-ui';
+import { NCard, NTabs, NTabPane, NButton, NSpace, NAlert, NSplit, NTag } from 'naive-ui';
 import { useStyleStore } from '@/stores/style.store';
 import { parseDxfToJson } from './dxf-parser.service';
 import { jsonToScr } from './json-to-scr.service';
 import { jsonToDxf } from './json-to-dxf.service';
 import type { CadDocument } from './autocad-llm-sync.types';
+import {
+  checkFileSystemSupport,
+  requestFileHandle,
+  writeFileToHandle,
+  readFileFromHandle,
+  checkFileModified,
+} from './file-system.service';
+import {
+  saveFileMetadata,
+  loadFileMetadata,
+  clearFileMetadata,
+  createFileMetadata,
+  formatFileSize,
+  formatTimestamp,
+  getTimeSinceSync,
+  updateLastSyncTime,
+} from './file-storage.service';
 
 // Disable Monaco Editor workers to avoid Vite bundling issues
 // This means no syntax highlighting or validation, but the editor still works
@@ -22,6 +39,13 @@ const jsonContent = ref<string>('');
 const scrContent = ref<string>('');
 const dxfContent = ref<string>('');
 const errorMessage = ref<string>('');
+const successMessage = ref<string>('');
+
+// File System Access API state
+const fileSystemSupported = ref(false);
+const currentFileHandle = ref<FileSystemFileHandle | null>(null);
+const fileMetadata = ref(loadFileMetadata());
+const isCheckingForChanges = ref(false);
 
 // Monaco Editor refs
 const jsonEditorContainer = ref<HTMLElement | null>(null);
@@ -133,6 +157,7 @@ async function handleFileUpload(event: Event) {
 
   try {
     errorMessage.value = '';
+    successMessage.value = '';
     const content = await file.text();
 
     // Parse DXF to JSON
@@ -148,6 +173,10 @@ async function handleFileUpload(event: Event) {
     // Generate DXF
     dxfContent.value = jsonToDxf(document);
 
+    // Save file metadata
+    fileMetadata.value = createFileMetadata(file);
+    saveFileMetadata(fileMetadata.value);
+
     // Update Monaco editors
     nextTick(() => {
       jsonEditor?.setValue(jsonContent.value);
@@ -158,6 +187,130 @@ async function handleFileUpload(event: Event) {
   catch (err: any) {
     errorMessage.value = `Error parsing file: ${err.message}`;
     console.error('File parsing error:', err);
+  }
+}
+
+// File System Access API: Open file with handle
+async function openFileWithHandle() {
+  try {
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    const result = await requestFileHandle();
+    if (!result) {
+      // User cancelled
+      return;
+    }
+
+    const { handle, file } = result;
+    currentFileHandle.value = handle;
+
+    // Read and parse file
+    const content = await file.text();
+    const document = parseDxfToJson(content);
+    currentDocument.value = document;
+
+    // Update views
+    jsonContent.value = JSON.stringify(document, null, 2);
+    scrContent.value = jsonToScr(document);
+    dxfContent.value = jsonToDxf(document);
+
+    // Save metadata
+    fileMetadata.value = createFileMetadata(file);
+    saveFileMetadata(fileMetadata.value);
+
+    // Update editors
+    nextTick(() => {
+      jsonEditor?.setValue(jsonContent.value);
+      scrEditor?.setValue(scrContent.value);
+      dxfEditor?.setValue(dxfContent.value);
+    });
+
+    successMessage.value = `Opened file: ${file.name}`;
+  }
+  catch (err: any) {
+    errorMessage.value = `Error opening file: ${err.message}`;
+    console.error('File open error:', err);
+  }
+}
+
+// Save current JSON back to disk
+async function saveToDisk() {
+  if (!currentFileHandle.value) {
+    errorMessage.value = 'No file handle available. Please open a file using "Open with File Access" button.';
+    return;
+  }
+
+  try {
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    // Write DXF content to file
+    await writeFileToHandle(currentFileHandle.value, dxfContent.value);
+
+    // Update metadata
+    const file = await readFileFromHandle(currentFileHandle.value);
+    fileMetadata.value = createFileMetadata(file);
+    saveFileMetadata(fileMetadata.value);
+    updateLastSyncTime();
+
+    successMessage.value = `Saved to ${currentFileHandle.value.name}`;
+  }
+  catch (err: any) {
+    errorMessage.value = `Error saving file: ${err.message}`;
+    console.error('File save error:', err);
+  }
+}
+
+// Reload file from disk
+async function reloadFromDisk() {
+  if (!currentFileHandle.value) {
+    errorMessage.value = 'No file handle available. Please open a file using "Open with File Access" button.';
+    return;
+  }
+
+  try {
+    errorMessage.value = '';
+    successMessage.value = '';
+    isCheckingForChanges.value = true;
+
+    const file = await readFileFromHandle(currentFileHandle.value);
+
+    // Check if file was modified
+    if (fileMetadata.value && file.lastModified <= fileMetadata.value.lastModified) {
+      successMessage.value = 'File is up to date (no changes detected)';
+      isCheckingForChanges.value = false;
+      return;
+    }
+
+    // Read and parse file
+    const content = await file.text();
+    const document = parseDxfToJson(content);
+    currentDocument.value = document;
+
+    // Update views
+    jsonContent.value = JSON.stringify(document, null, 2);
+    scrContent.value = jsonToScr(document);
+    dxfContent.value = jsonToDxf(document);
+
+    // Update metadata
+    fileMetadata.value = createFileMetadata(file);
+    saveFileMetadata(fileMetadata.value);
+
+    // Update editors
+    nextTick(() => {
+      jsonEditor?.setValue(jsonContent.value);
+      scrEditor?.setValue(scrContent.value);
+      dxfEditor?.setValue(dxfContent.value);
+    });
+
+    successMessage.value = `Reloaded from ${file.name}`;
+    isCheckingForChanges.value = false;
+  }
+  catch (err: any) {
+    errorMessage.value = `Error reloading file: ${err.message}`;
+    console.error('File reload error:', err);
+    isCheckingForChanges.value = false;
   }
 }
 
@@ -204,8 +357,30 @@ function downloadDxf() {
   URL.revokeObjectURL(url);
 }
 
+// Clear all data
+function clearAll() {
+  currentDocument.value = null;
+  jsonContent.value = '';
+  scrContent.value = '';
+  dxfContent.value = '';
+  errorMessage.value = '';
+  successMessage.value = '';
+  currentFileHandle.value = null;
+  fileMetadata.value = null;
+  clearFileMetadata();
+
+  // Clear editors
+  jsonEditor?.setValue('');
+  scrEditor?.setValue('');
+  dxfEditor?.setValue('');
+}
+
 // Lifecycle hooks
 onMounted(() => {
+  // Check File System Access API support
+  const support = checkFileSystemSupport();
+  fileSystemSupported.value = support.supported;
+
   initializeEditors();
 });
 
@@ -228,21 +403,59 @@ watch(currentDocument, () => {
     <n-card title="AutoCAD LLM Sync">
       <n-space vertical>
         <!-- File Upload -->
-        <n-card title="Upload DXF File" size="small">
-          <n-space>
-            <input
-              type="file"
-              accept=".dxf,.dxx"
-              @change="handleFileUpload"
-            >
-            <n-button v-if="currentDocument" secondary @click="currentDocument = null">
-              Clear
-            </n-button>
+        <n-card title="Load DXF File" size="small">
+          <n-space vertical>
+            <!-- Traditional file upload -->
+            <n-space>
+              <input
+                type="file"
+                accept=".dxf,.dxx"
+                @change="handleFileUpload"
+              >
+              <n-button v-if="currentDocument" secondary @click="clearAll">
+                Clear
+              </n-button>
+            </n-space>
+
+            <!-- File System Access API option -->
+            <n-space v-if="fileSystemSupported">
+              <n-button type="primary" @click="openFileWithHandle">
+                Open with File Access (Recommended)
+              </n-button>
+              <n-alert type="info" style="flex: 1;">
+                Use File Access to save changes back to the original file
+              </n-alert>
+            </n-space>
+            <n-alert v-else type="warning">
+              File System Access API not supported in this browser. Use Chrome, Edge, or Opera for full functionality.
+            </n-alert>
+          </n-space>
+        </n-card>
+
+        <!-- File Info -->
+        <n-card v-if="fileMetadata" title="File Information" size="small">
+          <n-space vertical size="small">
+            <div><strong>Name:</strong> {{ fileMetadata.name }}</div>
+            <div><strong>Size:</strong> {{ formatFileSize(fileMetadata.size) }}</div>
+            <div><strong>Last Modified:</strong> {{ formatTimestamp(fileMetadata.lastModified) }}</div>
+            <div v-if="getTimeSinceSync()"><strong>Last Synced:</strong> {{ getTimeSinceSync() }}</div>
+            <n-space v-if="currentFileHandle">
+              <n-tag type="success">File Handle Active</n-tag>
+              <n-button size="small" @click="saveToDisk">
+                Save to Disk
+              </n-button>
+              <n-button size="small" secondary @click="reloadFromDisk" :loading="isCheckingForChanges">
+                Reload from Disk
+              </n-button>
+            </n-space>
           </n-space>
         </n-card>
 
         <!-- Error Display -->
-        <n-alert v-if="errorMessage" type="error" :title="errorMessage" />
+        <n-alert v-if="errorMessage" type="error" :title="errorMessage" closable @close="errorMessage = ''" />
+
+        <!-- Success Display -->
+        <n-alert v-if="successMessage" type="success" :title="successMessage" closable @close="successMessage = ''" />
 
         <!-- Tabs for different views -->
         <n-tabs v-if="currentDocument" type="line" animated>
