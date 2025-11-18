@@ -34,6 +34,7 @@ const scrContent = ref<string>('');
 const dxfContent = ref<string>('');
 const errorMessage = ref<string>('');
 const successMessage = ref<string>('');
+const activeTab = ref('json'); // Track active tab for editor recreation
 
 // File System Access API state
 const fileSystemSupported = ref(false);
@@ -399,6 +400,86 @@ watch(dxfContent, (newContent) => {
     dxfEditor.setValue(newContent);
   }
 });
+
+// Handle tab changes - recreate editors when switching tabs
+// This is necessary because Naive UI destroys inactive tab DOM elements
+function handleTabChange(tabName: string) {
+  activeTab.value = tabName;
+
+  // Wait for DOM to be ready, then recreate the editor for the active tab
+  nextTick(() => {
+    if (tabName === 'json' && jsonEditorContainer.value) {
+      // Dispose old editor if it exists
+      if (jsonEditor) {
+        jsonEditor.dispose();
+        jsonEditor = null;
+      }
+      // Recreate JSON editor
+      jsonEditor = monaco.editor.create(jsonEditorContainer.value, {
+        value: jsonContent.value,
+        language: 'json',
+        theme: styleStore.isDarkTheme ? 'it-tools-dark' : 'it-tools-light',
+        minimap: { enabled: false },
+        automaticLayout: true,
+        readOnly: false,
+        wordWrap: 'on',
+        scrollBeyondLastLine: false,
+      });
+
+      // Re-attach change listener
+      jsonEditor.onDidChangeModelContent(() => {
+        const value = jsonEditor?.getValue() || '';
+        jsonContent.value = value;
+
+        try {
+          const doc = JSON.parse(value);
+          currentDocument.value = doc;
+          scrContent.value = jsonToScr(doc);
+          dxfContent.value = jsonToDxf(doc);
+        }
+        catch (err) {
+          // Invalid JSON, ignore
+        }
+      });
+    }
+    else if (tabName === 'scr' && scrEditorContainer.value) {
+      // Dispose old editor if it exists
+      if (scrEditor) {
+        scrEditor.dispose();
+        scrEditor = null;
+      }
+      // Recreate SCR editor
+      scrEditor = monaco.editor.create(scrEditorContainer.value, {
+        value: scrContent.value,
+        language: 'plaintext',
+        theme: styleStore.isDarkTheme ? 'it-tools-dark' : 'it-tools-light',
+        minimap: { enabled: false },
+        automaticLayout: true,
+        readOnly: true,
+        wordWrap: 'on',
+        scrollBeyondLastLine: false,
+      });
+    }
+    else if (tabName === 'dxf' && dxfEditorContainer.value) {
+      // Dispose old editor if it exists
+      if (dxfEditor) {
+        dxfEditor.dispose();
+        dxfEditor = null;
+      }
+      // Recreate DXF editor
+      dxfEditor = monaco.editor.create(dxfEditorContainer.value, {
+        value: dxfContent.value,
+        language: 'plaintext',
+        theme: styleStore.isDarkTheme ? 'it-tools-dark' : 'it-tools-light',
+        minimap: { enabled: false },
+        automaticLayout: true,
+        readOnly: true,
+        wordWrap: 'on',
+        scrollBeyondLastLine: false,
+      });
+    }
+  });
+}
 </script>
 
 <template>
@@ -461,7 +542,7 @@ watch(dxfContent, (newContent) => {
         <n-alert v-if="successMessage" type="success" :title="successMessage" closable @close="successMessage = ''" />
 
         <!-- Tabs for different views -->
-        <n-tabs v-if="currentDocument" type="line" animated>
+        <n-tabs v-if="currentDocument" v-model:value="activeTab" type="line" animated @update:value="handleTabChange">
           <!-- JSON View -->
           <n-tab-pane name="json" tab="JSON (Editable)">
             <n-space vertical>
