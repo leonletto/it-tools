@@ -25,11 +25,21 @@ import {
 } from './file-storage.service';
 
 // Disable Monaco Editor workers to avoid Vite bundling issues
-// This means no syntax highlighting or validation, but the editor still works
+// Monaco 0.54.0 requires a proper worker stub instead of null
 (self as any).MonacoEnvironment = {
-  getWorker() {
-    // Return null to disable all workers
-    return null;
+  getWorker(_workerId: string, _label: string) {
+    // Return a fake worker that does nothing
+    // This prevents "Cannot read properties of null (reading 'postMessage')" errors
+    return {
+      postMessage: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      terminate: () => {},
+      dispatchEvent: () => true,
+      onmessage: null,
+      onmessageerror: null,
+      onerror: null,
+    } as Worker;
   },
 };
 
